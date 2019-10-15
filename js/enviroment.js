@@ -5,6 +5,7 @@ const LANE_WIDTH = 500;
 const CHANGE_DURATION = 50;
 const MAX_RIGHT = 326
 const BOTTOM_SPACE = 30;
+const MAX_CAR_COUNT = 3;
 
 const OBSTACLE_CAR_DURATION = 2000;
 const OBSTACLE_DISTRUCTION_DURATION = 1000;
@@ -13,12 +14,30 @@ const ROCKET_LAUNCH_INTERVAL = 100;
 const ROCKET_GENERATION_THRES= 0.8;
 const MULTI_CAR_PROB = 0.5;
 const MAX_AMMO = 16
+const INITIAL_GAME_STATE = {
+                            gamePoint : 0,
+                            obsCarList : [],
+                            rocketsList:[],
+                            gameSpeed : 7,
+                            rocketCount : 5,
+                            laneBottomPos : 0
+                          }
+
 class GameEnviroment{
     constructor(mainWrapper, envWidth, envHeight){
+      this.gameState = {
+        gamePoint : 0,
+        obsCarList : [],
+        rocketsList:[],
+        gameSpeed : 7,
+        rocketCount : 5,
+        laneBottomPos : 0
+      }
+      this.isStart = true;
       this.envWidth = envWidth;
       this.envHeight = envHeight;
       this.mainWrapper = mainWrapper;
-      this.laneBottomPos = 0
+      
       this.gameLaneHeight = (this.envHeight * 100) 
       this.laneGap = 75.5;
       this.onMove = false;
@@ -26,19 +45,23 @@ class GameEnviroment{
       this.defaultwidth = 45;
       this.defaultheight = 80;
       this.envLeftGap = 100;
-      this.obsCarList = []
-      this.rocketsList = []
-      this.gamePoint = 0
-      this.rocketCount = 12;
 
       this.autoDrive = true;
       this.gameOver = true;
       this.hasRocketFired = false;
-
-      this.gameSpeed = 7;
       
       this.renderGameInfo()
       this.renderEnviroment()
+    }
+
+    resetGameState = () =>{
+      Object.keys(this.gameState).map(key =>{
+
+        this.gameState[key] = INITIAL_GAME_STATE[key]
+        if(key == 'obsCarList'){
+          this.gameState[key] = []
+        }
+      })
     }
 
     renderEnviroment = () =>{
@@ -59,7 +82,6 @@ class GameEnviroment{
 
       this.mainWrapper.appendChild(this.gameView);
       this.gameView.appendChild(this.gameLane);
-      // this.setEnviromentStyle()
     }
 
     renderGameInfo = () =>{
@@ -68,31 +90,38 @@ class GameEnviroment{
       this.playBtn = document.getElementsByClassName('play-btn')[0]
       this.scoreWrapper = document.getElementsByClassName('score-wrapper')[0]
       this.scoreWrapper.style.display='none';
-      this.playerScore = document.getElementsByClassName('player-score')[0]
-      this.highestScore = document.getElementsByClassName('highest-score')[0]
+      this.playerScoreElem = document.getElementsByClassName('player-score')[0]
+      this.highestScoreElem = document.getElementsByClassName('highest-score')[0]
 
       this.total_points = document.getElementById('total_points')
       this.playBtn.addEventListener('click', () =>{
         this.gameOver = false;
         this.gameMenu.style.display = 'none'
-        this.updateAmmoCount()
-        this.generateCar()
-        this.updateEnviroment()
-        this.generateObstacleCars()
+        if(this.isStart){
+          this.resetGameState()
+          this.updateAmmoCount()
+          this.generateCar()
+          this.activateMissile()
+          this.updateEnviroment()
+          this.generateObstacleCars()
+          this.updateScore()
+          this.updateAmmoCount()
+        }
 
       })
-      this.total_points.innerHTML = this.gamePoint;
+      this.total_points.innerHTML = this.gameState.gamePoint;
     }
 
     updateScore = () =>{
-      this.gamePoint += 1;
-      this.total_points.innerHTML = this.gamePoint;
+      if(!this.gameOver){
+        this.total_points.innerHTML = this.gameState.gamePoint;
+      }      
     }
 
     updateAmmoCount = () =>{
       
       this.ammoDisplay.innerHTML = ''      
-      for(var i = 0; i < this.rocketCount; i++){
+      for(var i = 0; i < this.gameState.rocketCount; i++){
         var icon = document.createElement('i')
         icon.setAttribute("class", "fas fa-meteor")
         this.ammoDisplay.appendChild(icon)
@@ -106,7 +135,6 @@ class GameEnviroment{
       this.car.getElement().classList.add('car')
       this.car.updatePos()
       this.gameLane.appendChild(this.car.getElement())
-      this.activateRocket()
       if(!this.autoDrive){
         window.addEventListener("keydown", this.moveUpLane);
       }else{
@@ -120,26 +148,33 @@ class GameEnviroment{
           var moreCarProb = Math.random()
         var carCount = 1
         if(moreCarProb > MULTI_CAR_PROB){
-          carCount += Math.floor(Math.random()*3) 
+          carCount += Math.floor(Math.random()*MAX_CAR_COUNT) 
         }
         var carXPos = []
         for(var i = 0; i< carCount; i++){
-          var xPos = (Math.floor(Math.random()*4) * this.laneGap) + X_START_POS;
+          var randomDigit = Math.floor(Math.random()*4)
+          var xPos = ( randomDigit * this.laneGap) + X_START_POS;
           while(carXPos.includes(xPos)){
             xPos = (Math.floor(Math.random()*4) * this.laneGap) + X_START_POS;
           }
           carXPos.push(xPos)
-          var yPos = -this.laneBottomPos + DEFAULT_ENV_HEIGHT;
+          var yPos = -this.gameState.laneBottomPos + DEFAULT_ENV_HEIGHT;
           var rocketProb = Math.random()
+          
           var obsCar = new Car(this.defaultwidth, this.defaultheight, this.gameLaneHeight)
           var obsCarImg = './images/car.png';
           var className = 'obs-car'
-
+          // generate random missiles adder
           if(rocketProb > ROCKET_GENERATION_THRES){
             obsCar.isCar = false;
             className = 'rocket-add';
             obsCarImg = './images/rocket.gif';
           }
+          // change direction of car
+          else if(randomDigit > 1){
+            obsCar.getElement().style.transform = 'rotate(180deg)' 
+          }
+
           obsCar.getElement().classList.add(className)
 
           obsCar.setCarImage(obsCarImg)
@@ -148,9 +183,11 @@ class GameEnviroment{
           obsCar.setCarYPos(yPos)
           obsCar.updatePos()         
 
-          this.obsCarList.push(obsCar)
+          this.gameState.obsCarList.push(obsCar)
           this.gameLane.appendChild(obsCar.getElement())
         }
+      }else{
+        clearInterval(randomCars)
       }
     },OBSTACLE_CAR_DURATION)
    }
@@ -158,39 +195,45 @@ class GameEnviroment{
     updateEnviroment = () =>{
       var speedShiftValue = 4
       var pointsGained = false;
+      
       var envInterval = setInterval(() =>{
         if(!this.gameOver){
-          this.obsCarList.map((obsCar, i) =>{
-            if(obsCar.yPos < Math.abs(this.laneBottomPos)){
-              this.obsCarList.splice(i, 1)
+          this.gameState.obsCarList.map((obsCar, i) =>{
+            if(obsCar.yPos < Math.abs(this.gameState.laneBottomPos)){
+              this.gameState.obsCarList.splice(i, 1)
               if(obsCar.isCar){
+                this.gameState.gamePoint += 1;
                 this.updateScore()
               }
               pointsGained = true
             }
           })
           this.checkCollision(this.car)
-          if(this.laneBottomPos <= -(this.gameLaneHeight)){
-            this.laneBottomPos = 0
+          if(this.gameState.laneBottomPos <= -(this.gameLaneHeight)){
+            this.gameState.laneBottomPos = 0
           }
-          this.gameLane.style.bottom = this.laneBottomPos + 'px';
+          this.gameLane.style.bottom = this.gameState.laneBottomPos + 'px';
         }
         else{
           clearInterval(envInterval)
         }
-        if((this.gamePoint % speedShiftValue) === 1 && pointsGained){
-          this.gameSpeed += 1
+        if((this.gameState.gamePoint % speedShiftValue) === 1 && pointsGained){
+          this.gameState.gameSpeed += 1
           pointsGained = false
         }        
       }, FRAME_RATE)
     }
 
+
     autoMoveFront = (car) =>{
       var interval = setInterval(() =>{
         if(!this.gameOver){
-          this.laneBottomPos -= this.gameSpeed;
-          car.setCarYPos(-this.laneBottomPos + BOTTOM_SPACE)
-        }        
+          this.gameState.laneBottomPos -= this.gameState.gameSpeed;
+          car.setCarYPos(-this.gameState.laneBottomPos + BOTTOM_SPACE)
+        }else{
+          clearInterval(interval)
+        }
+
       }, FRAME_RATE)
     }
 
@@ -232,7 +275,7 @@ class GameEnviroment{
 
     hasDestroyedCar = (rocket) =>{
       var destroyedCarIndex = -1;
-      this.obsCarList.map((obs, i) => {
+      this.gameState.obsCarList.map((obs, i) => {
         // for car
         var rightCollision = rocket.xPos + rocket.width >= obs.xPos
         var leftCollision = rocket.xPos <= obs.xPos + obs.width
@@ -243,10 +286,10 @@ class GameEnviroment{
           destroyedCarIndex = i;
           var blastImgPath = './images/blast.gif' 
           obs.setCarImage(blastImgPath)
-          
+          this.gameState.gamePoint += 1;
           this.updateScore()
           rocket.isArmed = false;
-          this.rocketsList = this.rocketsList.filter(singleRocket =>  singleRocket !== rocket)
+          this.gameState.rocketsList = this.gameState.rocketsList.filter(singleRocket =>  singleRocket !== rocket)
           this.updateAmmoCount()
           this.gameLane.removeChild(rocket.getElement())
           setTimeout(() =>{
@@ -256,33 +299,39 @@ class GameEnviroment{
       })
       if(destroyedCarIndex >= 0){ 
         
-        this.obsCarList.splice(destroyedCarIndex, 1)
+        this.gameState.obsCarList.splice(destroyedCarIndex, 1)
       }
     }
 
     hasRocketReachedEnd = (rocket) =>{
       var rocketYPos = rocket.yPos;
       var reachedEnd = false;
-      if(rocketYPos > Math.abs(this.laneBottomPos + DEFAULT_ENV_HEIGHT)){
-        this.rocketsList = this.rocketsList.filter(singleRocket => singleRocket !== rocket)
+      if(rocketYPos > Math.abs(this.gameState.laneBottomPos + DEFAULT_ENV_HEIGHT)){
+        this.gameState.rocketsList = this.gameState.rocketsList.filter(singleRocket => singleRocket !== rocket)
         this.updateAmmoCount()
       }      
     }
 
-    activateRocket = () =>{
-      var rocketInterval = setInterval(() =>{
-        if(this.hasRocketFired && this.rocketCount && !this.gameOver){
+    activateMissile = () =>{
+    var rocketInterval = setInterval(() =>{
+      if(!this.gameOver){
+        if(this.hasRocketFired && this.gameState.rocketCount){
           var rocketYPos = this.car.yPos;
           var rocketXPos = this.car.xPos;
           var rocketWidth = 60;
           var rocketHeight = 60;
           var rocket =  new Rocket(this.gameLane, rocketXPos, rocketYPos, rocketWidth, rocketHeight);
           rocket.launch(this.hasDestroyedCar, this.hasRocketReachedEnd)    
-          this.rocketCount -= 1;
-          this.rocketsList.push(rocket)
+          this.gameState.rocketCount -= 1;
+          this.gameState.rocketsList.push(rocket)
         }
-      }, ROCKET_LAUNCH_INTERVAL)
-    }
+      }
+      else{
+        clearInterval(rocketInterval)
+      }
+
+    }, ROCKET_LAUNCH_INTERVAL)
+  }
 
     attackAction = (e) =>{
       var keyCode = e.keyCode
@@ -325,10 +374,29 @@ class GameEnviroment{
         }
       }
     }
+
+    endGame = () =>{
+      this.gameMenu.style.display = 'block'
+      this.scoreWrapper.style.display='block';
+      this.playerScoreElem.innerHTML = this.gameState.gamePoint;
+      this.gameLane.innerHTML = ''
+      var highScoreStore = window.localStorage.getItem('high_score')
+      var playerScore = this.gameState.gamePoint
+      if(highScoreStore){
+        if(highScoreStore < playerScore){
+          window.localStorage.setItem('high_score', playerScore)
+        }else{
+          playerScore = highScoreStore
+        }
+      }else{
+        window.localStorage.setItem('high_score', playerScore)
+      }
+      this.highestScoreElem.innerHTML = playerScore
+    }
     
 
     checkCollision = (car) => {
-      this.obsCarList.map(obs => {
+      this.gameState.obsCarList.map(obs => {
         // for car
         var rightCollision = car.xPos + car.width >= obs.xPos
         var leftCollision = car.xPos <= obs.xPos + obs.width
@@ -337,34 +405,25 @@ class GameEnviroment{
         
         if(!obs.isTouched && leftCollision && rightCollision && topCollision && bottomCollision){    
           obs.isTouched = true;
-          if(obs.isCar){
+          if(obs.isCar && !this.gameOver){
             var blastImgPath = './images/blast.gif' 
-            this.gameOver = true;
-            this.gameMenu.style.display = 'block'
-            this.scoreWrapper.style.display='block';
-            this.playerScore.innerHTML = this.gamePoint;
             car.setCarImage(blastImgPath)
+            this.gameOver = true;
             setTimeout(() =>{
-              this.gameLane.removeChild(car.getElement())
+              this.endGame()
             }, 2000)
           }
           
           else{
-            if(this.rocketCount < MAX_AMMO){
-              obs.getElement().style.display = 'none'
-              this.rocketCount += 2;
+            obs.getElement().style.display = 'none'
+            if(this.gameState.rocketCount < MAX_AMMO){              
+              this.gameState.rocketCount += 2;
               this.updateAmmoCount()
             }
           }
         }
       })
 
-    }
-
-    setEnviromentStyle = () =>{
-      this.mainWrapper.style.height = this.envHeight + 'px';
-      this.mainWrapper.style.backgroundColor = '#fcfcfc';
-      this.mainWrapper.style.borderRadius = '5px'
     }
 }
 
