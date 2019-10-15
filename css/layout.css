@@ -1,0 +1,33 @@
+body{
+  background: #dcdcdc;
+}
+
+.container{
+  width:75em;
+  margin: auto;
+  padding: 20px;
+}
+
+
+.game-view{
+  margin:auto;
+  overflow: hidden;
+  position:relative;
+}
+
+.game-lane{
+  background-color: #dcdcdc;
+  position: absolute;
+  bottom: 0;
+  background-image:url(./../images/road_texture.png);
+  background-size: 500px 100px;
+}
+
+.car, .rocket-add, .obs-car{
+  position:absolute;
+  bottom : 0px;
+}
+
+.rocket-div{
+  position: absolute;
+}

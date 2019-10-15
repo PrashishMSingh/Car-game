@@ -1,0 +1,9 @@
+.point-counter{
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 30px;
+  background-color: #3498DB;
+  text-align: center;
+  color: #fcfcfc;
+  border-radius: 5px;
+}
