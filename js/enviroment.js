@@ -162,7 +162,7 @@ class GameEnviroment{
           var rocketProb = Math.random()
           
           var obsCar = new Car(this.defaultwidth, this.defaultheight, this.gameLaneHeight)
-          var obsCarImg = './images/car.png';
+          var obsCarImg = './images/obs_car.png';
           var className = 'obs-car'
           // generate random missiles adder
           if(rocketProb > ROCKET_GENERATION_THRES){
