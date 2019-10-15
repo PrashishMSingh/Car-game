@@ -6,13 +6,28 @@ body{
   width:75em;
   margin: auto;
   padding: 20px;
+  display:block;
 }
 
+.main-body{
+  margin:auto;
+  width: 500px;
+  overflow: hidden;
+  position:relative;
+  background-color: #fcfcfc;
+  padding: 20px;
+  border-radius: 10px;
+  
+}
 
 .game-view{
   margin:auto;
   overflow: hidden;
   position:relative;
+}
+
+ul{
+  list-style: none;
 }
 
 .game-lane{
@@ -30,4 +45,97 @@ body{
 
 .rocket-div{
   position: absolute;
+}
+
+.info-board{
+  background-color: #2B8EE0;
+  border-radius: 10px 10px 0 0;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.clear-fix:before, .clear-fix:after{
+  content : "";
+  display : table;
+  clear: both;
+}
+
+.score-board{
+  width: 50%;
+  float: left;
+  color: #fcfcfc;
+  line-height: 20px;
+  font-size: 12px;
+
+}
+
+.ammo-count{
+  float: right;
+  width : 200px;
+  height : 60px;
+  background: white;
+  border-radius: 10px;
+  padding : 0 5px;
+}
+
+.ammo-count i{
+  font-size: 14px;
+  padding: 5px;
+  line-height: 20px;
+  color: #2B8EE0;
+}
+
+.score-board{
+  font-size: 24px;
+  line-height: 60px;
+  text-align: center;
+}
+
+#total_points{
+  padding: 0 10px;
+  height:40px;
+  border-radius: 10px;
+  font-size: 24px;
+  background-color: #fcfcfc;
+  color: #2B8EE0;
+  margin-left: 20px;
+}
+
+.game-menu{
+  width: 200px;
+  background: #fcfcfc;
+  border-radius: 10px;
+  position: absolute;
+  top: 40%;
+  left: 35%;
+  z-index: 10;
+  text-align: center;
+}
+
+.menu-title{
+  text-align: center;
+  font-size: 15px;
+  background-color: #E84639;
+  color: #fcfcfc;
+  border-radius: 10px 10px 0 0 ;
+  line-height: 30px;
+}
+
+.score-wrapper{
+  padding: 20px;
+}
+
+.score-wrapper ul li{
+  font-size: 14px;
+  line-height: 30px;
+  text-align: left;
+}
+
+.play-btn{
+  background-color: #2B8EE0;
+  padding: 0 20px;
+  line-height: 40px;
+  border-radius: 10px;
+  color: #fcfcfc;
+  margin: 20px 0;
 }

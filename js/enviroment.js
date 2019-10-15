@@ -6,11 +6,13 @@ const CHANGE_DURATION = 50;
 const MAX_RIGHT = 326
 const BOTTOM_SPACE = 30;
 
-const OBSTACLE_CAR_DURATION = 3000;
+const OBSTACLE_CAR_DURATION = 2000;
+const OBSTACLE_DISTRUCTION_DURATION = 1000;
 const ROCKET_LAUNCH_INTERVAL = 100;
 
 const ROCKET_GENERATION_THRES= 0.8;
-
+const MULTI_CAR_PROB = 0.5;
+const MAX_AMMO = 16
 class GameEnviroment{
     constructor(mainWrapper, envWidth, envHeight){
       this.envWidth = envWidth;
@@ -27,17 +29,16 @@ class GameEnviroment{
       this.obsCarList = []
       this.rocketsList = []
       this.gamePoint = 0
-      this.rocketLimit = 5;
+      this.rocketCount = 12;
 
       this.autoDrive = true;
-      this.gameOver = false;
+      this.gameOver = true;
       this.hasRocketFired = false;
 
       this.gameSpeed = 7;
       
-
+      this.renderGameInfo()
       this.renderEnviroment()
-      this.generateCar()
     }
 
     renderEnviroment = () =>{
@@ -58,7 +59,44 @@ class GameEnviroment{
 
       this.mainWrapper.appendChild(this.gameView);
       this.gameView.appendChild(this.gameLane);
-      this.setEnviromentStyle()
+      // this.setEnviromentStyle()
+    }
+
+    renderGameInfo = () =>{
+      this.ammoDisplay = document.getElementsByClassName('ammo-count')[0]
+      this.gameMenu = document.getElementsByClassName('game-menu')[0]
+      this.playBtn = document.getElementsByClassName('play-btn')[0]
+      this.scoreWrapper = document.getElementsByClassName('score-wrapper')[0]
+      this.scoreWrapper.style.display='none';
+      this.playerScore = document.getElementsByClassName('player-score')[0]
+      this.highestScore = document.getElementsByClassName('highest-score')[0]
+
+      this.total_points = document.getElementById('total_points')
+      this.playBtn.addEventListener('click', () =>{
+        this.gameOver = false;
+        this.gameMenu.style.display = 'none'
+        this.updateAmmoCount()
+        this.generateCar()
+        this.updateEnviroment()
+        this.generateObstacleCars()
+
+      })
+      this.total_points.innerHTML = this.gamePoint;
+    }
+
+    updateScore = () =>{
+      this.gamePoint += 1;
+      this.total_points.innerHTML = this.gamePoint;
+    }
+
+    updateAmmoCount = () =>{
+      
+      this.ammoDisplay.innerHTML = ''      
+      for(var i = 0; i < this.rocketCount; i++){
+        var icon = document.createElement('i')
+        icon.setAttribute("class", "fas fa-meteor")
+        this.ammoDisplay.appendChild(icon)
+      }
     }
 
     generateCar = () =>{
@@ -78,14 +116,19 @@ class GameEnviroment{
 
     generateObstacleCars = () =>{
       var randomCars = setInterval(()=>{
-        var moreCarProb = Math.random()
+        if(!this.gameOver){
+          var moreCarProb = Math.random()
         var carCount = 1
-        if(moreCarProb > 0.5){
-          carCount += Math.floor(Math.random()*2) 
+        if(moreCarProb > MULTI_CAR_PROB){
+          carCount += Math.floor(Math.random()*3) 
         }
-
+        var carXPos = []
         for(var i = 0; i< carCount; i++){
           var xPos = (Math.floor(Math.random()*4) * this.laneGap) + X_START_POS;
+          while(carXPos.includes(xPos)){
+            xPos = (Math.floor(Math.random()*4) * this.laneGap) + X_START_POS;
+          }
+          carXPos.push(xPos)
           var yPos = -this.laneBottomPos + DEFAULT_ENV_HEIGHT;
           var rocketProb = Math.random()
           var obsCar = new Car(this.defaultwidth, this.defaultheight, this.gameLaneHeight)
@@ -108,8 +151,9 @@ class GameEnviroment{
           this.obsCarList.push(obsCar)
           this.gameLane.appendChild(obsCar.getElement())
         }
-      },OBSTACLE_CAR_DURATION)
-    }
+      }
+    },OBSTACLE_CAR_DURATION)
+   }
 
     updateEnviroment = () =>{
       var speedShiftValue = 4
@@ -119,9 +163,10 @@ class GameEnviroment{
           this.obsCarList.map((obsCar, i) =>{
             if(obsCar.yPos < Math.abs(this.laneBottomPos)){
               this.obsCarList.splice(i, 1)
-              this.gamePoint += 1;
+              if(obsCar.isCar){
+                this.updateScore()
+              }
               pointsGained = true
-              console.log(this.gamePoint)
             }
           })
           this.checkCollision(this.car)
@@ -198,44 +243,42 @@ class GameEnviroment{
           destroyedCarIndex = i;
           var blastImgPath = './images/blast.gif' 
           obs.setCarImage(blastImgPath)
-          this.gamePoint += 1;
+          
+          this.updateScore()
           rocket.isArmed = false;
           this.rocketsList = this.rocketsList.filter(singleRocket =>  singleRocket !== rocket)
+          this.updateAmmoCount()
           this.gameLane.removeChild(rocket.getElement())
           setTimeout(() =>{
             this.gameLane.removeChild(obs.getElement())
-          }, 2000)
+          }, OBSTACLE_DISTRUCTION_DURATION)
         }
       })
       if(destroyedCarIndex >= 0){ 
         
         this.obsCarList.splice(destroyedCarIndex, 1)
       }
-      
-      
-
     }
 
     hasRocketReachedEnd = (rocket) =>{
       var rocketYPos = rocket.yPos;
+      var reachedEnd = false;
       if(rocketYPos > Math.abs(this.laneBottomPos + DEFAULT_ENV_HEIGHT)){
         this.rocketsList = this.rocketsList.filter(singleRocket => singleRocket !== rocket)
-      }else{
-        
-      }
-      
+        this.updateAmmoCount()
+      }      
     }
 
     activateRocket = () =>{
       var rocketInterval = setInterval(() =>{
-        if(this.hasRocketFired && this.rocketLimit){
+        if(this.hasRocketFired && this.rocketCount && !this.gameOver){
           var rocketYPos = this.car.yPos;
-          var rocketXPos = new Number(this.car.xPos + 5);
+          var rocketXPos = this.car.xPos;
           var rocketWidth = 60;
           var rocketHeight = 60;
           var rocket =  new Rocket(this.gameLane, rocketXPos, rocketYPos, rocketWidth, rocketHeight);
           rocket.launch(this.hasDestroyedCar, this.hasRocketReachedEnd)    
-          this.rocketLimit -= 1;
+          this.rocketCount -= 1;
           this.rocketsList.push(rocket)
         }
       }, ROCKET_LAUNCH_INTERVAL)
@@ -297,6 +340,9 @@ class GameEnviroment{
           if(obs.isCar){
             var blastImgPath = './images/blast.gif' 
             this.gameOver = true;
+            this.gameMenu.style.display = 'block'
+            this.scoreWrapper.style.display='block';
+            this.playerScore.innerHTML = this.gamePoint;
             car.setCarImage(blastImgPath)
             setTimeout(() =>{
               this.gameLane.removeChild(car.getElement())
@@ -304,9 +350,11 @@ class GameEnviroment{
           }
           
           else{
-            obs.getElement().style.display = 'none'
-            this.rocketLimit += 2;
-            console.log(this.rocketLimit)
+            if(this.rocketCount < MAX_AMMO){
+              obs.getElement().style.display = 'none'
+              this.rocketCount += 2;
+              this.updateAmmoCount()
+            }
           }
         }
       })
@@ -323,5 +371,4 @@ class GameEnviroment{
 var mainWrapper = document.getElementsByClassName('game-board')[0];
 var gameEnviroment = new GameEnviroment(mainWrapper, DEFAULT_ENV_WIDTH, DEFAULT_ENV_HEIGHT);
 
-gameEnviroment.updateEnviroment()
-gameEnviroment.generateObstacleCars()
+

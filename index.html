@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://kit.fontawesome.com/16749ecba0.js" crossorigin="anonymous"></script>
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
   <link rel ="stylesheet" href = "./css/reset.css"></link>
@@ -12,17 +13,38 @@
 <body>
 
   <header>
-    <div class = "container">
-      <div class = "point-counter">
-        Score :
-      </div>
-    </div>
   </header>
-
   <main>
     <div class = "container">
-      <div class = "game-board">
+      <div class = "main-body">
+        <div class = "game-menu">
+          <div class = "menu-title">
+            Car Game
+          </div>
+          <div class = "score-wrapper">
+            <ul>
+              <li>Highest Score : <span class = "highest-score"></span></li>
+              <li>Player Score : <span class = "player-score"></span></li>
+            </ul>
+          </div>
+          <button class = "play-btn">Play</button>
+        </div>
+        <div class = "info-board clear-fix">
+            <div class = "score-board">
+                SCORE 
+                <span id = "total_points"></span>
+            </div>
+            <div class = "ammo-count">
+            </div>
+        </div>
 
+        <div class = "game-board">
+        </div>
+        <div class = "utilities=board">
+          <div class = "cooldown">
+
+          </div>
+        </div>
       </div>
     </div>
   </main>
