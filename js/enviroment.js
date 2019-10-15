@@ -350,11 +350,10 @@ class GameEnviroment{
 
     KeyDownAction = (e) =>{
       var keyCode = e.keyCode
-      var sideGap = 100
       if(!this.onMove){
         switch(keyCode){
           case 37:
-            if(this.car.xPos > sideGap){
+            if(this.car.xPos > X_START_POS){
                 this.changeDir('left')
             }
             break;
