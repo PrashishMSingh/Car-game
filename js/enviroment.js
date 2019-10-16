@@ -38,7 +38,7 @@ class GameEnviroment{
       this.envHeight = envHeight;
       this.mainWrapper = mainWrapper;
       
-      this.gameLaneHeight = (this.envHeight * 100) 
+      this.gameLaneHeight = (this.envHeight * 10000) 
       this.laneGap = 75.5;
       this.onMove = false;
       this.carYPosList = []
